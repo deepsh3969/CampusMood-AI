@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0e1a" />
+    <meta
+      name="description"
+      content="CampusMood AI — Understand your study moments. Support your wellbeing. A privacy-first, on-device platform that estimates visible facial expressions during study sessions. Not a medical or mental-health diagnostic tool."
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="CampusMood AI" />
+    <meta
+      property="og:description"
+      content="AI-powered visible facial expression & student wellbeing insight platform. On-device processing, no facial recognition, no diagnosis."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>CampusMood AI — Understand your study moments. Support your wellbeing.</title>
+    <style>
+      html {
+        background-color: #0a0e1a;
+        color-scheme: dark;
+      }
+      html:not(.dark) {
+        background-color: #f6f7fb;
+        color-scheme: light;
+      }
+      #root {
+        min-height: 100dvh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <div style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 40rem; margin: 0 auto">
+        <h1>CampusMood AI requires JavaScript</h1>
+        <p>
+          CampusMood AI uses your browser's camera and on-device models to estimate visible facial
+          expressions. Please enable JavaScript to continue.
+        </p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
