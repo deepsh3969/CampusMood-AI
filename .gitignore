@@ -48,3 +48,5 @@ test-results
 # Misc
 .cache
 *.log
+
+.vercel

@@ -16,7 +16,9 @@ export function ProtectedRoute() {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace state={{ from: window.location.pathname }} />
+    // Use window.location safely
+    const from = typeof window !== 'undefined' ? window.location.pathname : '/'
+    return <Navigate to="/login" replace state={{ from }} />
   }
 
   return <Outlet />

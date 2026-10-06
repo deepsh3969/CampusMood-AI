@@ -15,58 +15,33 @@ import SettingsPage from '@/pages/SettingsPage'
 import ProfilePage from '@/pages/ProfilePage'
 import PrivacyPage from '@/pages/PrivacyPage'
 
-function AuthRoutes() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-    </Routes>
-  )
-}
-
-function PublicRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-    </Routes>
-  )
-}
-
-function ProtectedRoutes() {
-  return (
-    <Route element={<ProtectedRoute />}>
-      <Route element={<AppLayout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/monitor" element={<MonitorPage />} />
-        <Route path="/sessions" element={<SessionsPage />} />
-        <Route path="/sessions/:id" element={<SessionDetailPage />} />
-        <Route path="/insights" element={<InsightsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
-    </Route>
-  )
-}
-
 export default function App() {
   const location = useLocation()
 
   return (
     <AuthProvider>
       <Routes location={location}>
-        <Route path="/*" element={<PublicRoutes />} />
-        <Route path="/login" element={<AuthRoutes />} />
-        <Route path="/register" element={<AuthRoutes />} />
-        <Route path="/forgot-password" element={<AuthRoutes />} />
-        <Route path="/dashboard" element={<ProtectedRoutes />} />
-        <Route path="/monitor" element={<ProtectedRoutes />} />
-        <Route path="/sessions" element={<ProtectedRoutes />} />
-        <Route path="/sessions/:id" element={<ProtectedRoutes />} />
-        <Route path="/insights" element={<ProtectedRoutes />} />
-        <Route path="/settings" element={<ProtectedRoutes />} />
-        <Route path="/profile" element={<ProtectedRoutes />} />
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/monitor" element={<MonitorPage />} />
+            <Route path="/sessions" element={<SessionsPage />} />
+            <Route path="/sessions/:id" element={<SessionDetailPage />} />
+            <Route path="/insights" element={<InsightsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+        </Route>
+
+        {/* 404 - must be last */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AuthProvider>

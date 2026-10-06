@@ -19,15 +19,22 @@ export function createLocalAuthAdapter() {
   }
 
   function save(session: AuthSession): void {
-    localStorage.setItem(KEY, JSON.stringify(session))
+    try {
+      localStorage.setItem(KEY, JSON.stringify(session))
+    } catch {
+      // Ignore localStorage errors (e.g., quota exceeded, private browsing)
+    }
   }
 
   function clear(): void {
-    localStorage.removeItem(KEY)
+    try {
+      localStorage.removeItem(KEY)
+    } catch {
+      // Ignore
+    }
   }
 
   async function signUp(email: string, password: string, displayName: string, studentId?: string): Promise<AuthResult> {
-    // Simulate network delay
     await new Promise((r) => setTimeout(r, 350))
     const users = getUsers()
     if (users.find((u) => u.email === email)) {
@@ -68,7 +75,6 @@ export function createLocalAuthAdapter() {
     const users = getUsers()
     const user = users.find((u) => u.email === email)
     if (!user) return { ok: false, session: null, error: 'not-found' }
-    // In a real app, send email. Here we return success silently.
     return { ok: true, session: null, error: null }
   }
 
@@ -84,11 +90,14 @@ function getUsers(): Array<UserProfile & { passwordHash: string }> {
 }
 
 function saveUsers(users: Array<UserProfile & { passwordHash: string }>): void {
-  localStorage.setItem('campusmood.users', JSON.stringify(users))
+  try {
+    localStorage.setItem('campusmood.users', JSON.stringify(users))
+  } catch {
+    // Ignore
+  }
 }
 
 function hashPassword(password: string): string {
-  // Simple hash for local demo — NOT cryptographically secure.
   let hash = 0
   for (let i = 0; i < password.length; i += 1) {
     hash = ((hash << 5) - hash + password.charCodeAt(i)) | 0
@@ -109,71 +118,107 @@ export async function createSupabaseAuthAdapter(): Promise<{
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
   if (!url || !key) return null
-  // Dynamic import to avoid bundle size when not used
-  const { createClient } = await import('@supabase/supabase-js')
+
+  let createClient: (url: string, key: string) => any
+  try {
+    const mod = await import('@supabase/supabase-js')
+    createClient = mod.createClient
+  } catch {
+    // Supabase not available or failed to load - fall back to local auth
+    return null
+  }
+
   const supabase = createClient(url, key)
 
   return {
     async load() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return { ok: false, session: null, error: 'no-session' }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
-      const user: UserProfile = profile ?? {
-        id: session.user.id,
-        email: session.user.email ?? '',
-        displayName: session.user.user_metadata?.display_name ?? 'Student',
-        studentId: session.user.user_metadata?.student_id ?? null,
-        plan: 'student',
-        createdAt: session.user.created_at,
-      }
-      return { ok: true, session: { user, provider: 'supabase' }, error: null }
-    },
-    async save(session: AuthSession) {
-      await supabase.auth.setSession({
-        access_token: session.provider === 'supabase' ? '' : '',
-        refresh_token: '',
-      })
-    },
-    async clear() {
-      await supabase.auth.signOut()
-    },
-    async signUp(email: string, password: string, displayName: string, studentId?: string) {
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName, student_id: studentId } } })
-      if (error) return { ok: false, session: null, error: error.message }
-      return { ok: true, session: null, error: null }
-    },
-    async signIn(email: string, password: string) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) return { ok: false, session: null, error: error.message }
-      if (data.session) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return { ok: false, session: null, error: 'no-session' }
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', data.user.id)
+          .eq('id', session.user.id)
           .single()
         const user: UserProfile = profile ?? {
-          id: data.user.id,
-          email: data.user.email ?? '',
-          displayName: data.user.user_metadata?.display_name ?? 'Student',
-          studentId: data.user.user_metadata?.student_id ?? null,
+          id: session.user.id,
+          email: session.user.email ?? '',
+          displayName: session.user.user_metadata?.display_name ?? 'Student',
+          studentId: session.user.user_metadata?.student_id ?? null,
           plan: 'student',
-          createdAt: data.user.created_at,
+          createdAt: session.user.created_at,
         }
         return { ok: true, session: { user, provider: 'supabase' }, error: null }
+      } catch {
+        return { ok: false, session: null, error: 'supabase-load-failed' }
       }
-      return { ok: false, session: null, error: 'no-session' }
+    },
+    async save(session: AuthSession) {
+      try {
+        await supabase.auth.setSession({
+          access_token: session.provider === 'supabase' ? '' : '',
+          refresh_token: '',
+        })
+      } catch {
+        // Ignore
+      }
+    },
+    async clear() {
+      try {
+        await supabase.auth.signOut()
+      } catch {
+        // Ignore
+      }
+    },
+    async signUp(email: string, password: string, displayName: string, studentId?: string) {
+      try {
+        const { error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName, student_id: studentId } } })
+        if (error) return { ok: false, session: null, error: error.message }
+        return { ok: true, session: null, error: null }
+      } catch (e) {
+        return { ok: false, session: null, error: e instanceof Error ? e.message : 'supabase-signup-failed' }
+      }
+    },
+    async signIn(email: string, password: string) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) return { ok: false, session: null, error: error.message }
+        if (data.session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single()
+          const user: UserProfile = profile ?? {
+            id: data.user.id,
+            email: data.user.email ?? '',
+            displayName: data.user.user_metadata?.display_name ?? 'Student',
+            studentId: data.user.user_metadata?.student_id ?? null,
+            plan: 'student',
+            createdAt: data.user.created_at,
+          }
+          return { ok: true, session: { user, provider: 'supabase' }, error: null }
+        }
+        return { ok: false, session: null, error: 'no-session' }
+      } catch (e) {
+        return { ok: false, session: null, error: e instanceof Error ? e.message : 'supabase-signin-failed' }
+      }
     },
     async signOut() {
-      await supabase.auth.signOut()
+      try {
+        await supabase.auth.signOut()
+      } catch {
+        // Ignore
+      }
     },
     async resetPassword(email: string) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${import.meta.env.VITE_APP_URL}/reset-password` })
-      if (error) return { ok: false, session: null, error: error.message }
-      return { ok: true, session: null, error: null }
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${import.meta.env.VITE_APP_URL}/reset-password` })
+        if (error) return { ok: false, session: null, error: error.message }
+        return { ok: true, session: null, error: null }
+      } catch (e) {
+        return { ok: false, session: null, error: e instanceof Error ? e.message : 'supabase-reset-failed' }
+      }
     },
   }
 }
@@ -191,7 +236,11 @@ interface AuthAdapter {
 
 /** Factory that picks the right adapter. */
 export async function getAuthAdapter(): Promise<AuthAdapter> {
-  const supabase = await createSupabaseAuthAdapter()
-  if (supabase) return { ...supabase, kind: 'supabase' as AuthProviderKind }
+  try {
+    const supabase = await createSupabaseAuthAdapter()
+    if (supabase) return { ...supabase, kind: 'supabase' as AuthProviderKind }
+  } catch {
+    // Supabase adapter failed - fall back to local
+  }
   return { ...createLocalAuthAdapter(), kind: 'local' as AuthProviderKind }
 }
