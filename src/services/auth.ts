@@ -119,7 +119,7 @@ export async function createSupabaseAuthAdapter(): Promise<{
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
   if (!url || !key) return null
 
-  let createClient: (url: string, key: string) => any
+  let createClient: (url: string, key: string) => ReturnType<typeof import('@supabase/supabase-js').createClient>
   try {
     const mod = await import('@supabase/supabase-js')
     createClient = mod.createClient
